@@ -1,6 +1,11 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Synoptique Régie</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&display=swap">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 /* Layout: one-screen editor. Toolbar on top, library | drawing desk | inspector. Phone: desk above, tabbed panel below. */
 :root{
@@ -111,6 +116,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (min-width:901px){#lib,#insp{display:block!important}}
 @media (prefers-reduced-motion:reduce){#toast{transition:none}}
 </style>
+</head>
+<body>
+
 <div id="app">
   <div id="bar" role="toolbar" aria-label="Outils">
     <div class="brand">Synoptique<small>régie</small></div>
@@ -241,6 +249,7 @@ const LIB = [
 const LIBMAP = Object.fromEntries(LIB.map(x => [x.id, x]));
 const DEV_W = 176, DEV_H = 80;
 const SHEET = {w:1600, h:1131};
+
 /* ---------- État ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -341,6 +350,7 @@ function portLabel(pt, text, p){
   const o = {l:[-5,-4,'end'], r:[5,-4,'start'], t:[0,-6,'middle'], b:[0,13,'middle']}[pt.side];
   return `<text x="${pt.x + o[0]}" y="${pt.y + o[1]}" text-anchor="${o[2]}" font-size="10.5" style="font-family:${p.mono};fill:${p.text};stroke:${p.sheet};stroke-width:3.5;paint-order:stroke" stroke-linejoin="round">${esc(trunc(text, 14))}</text>`;
 }
+
 /* ---------- Dessin des éléments ---------- */
 function devSVG(it, p, isSel, isSrc){
   const L = LIBMAP[it.lib] || LIBMAP.laptop, col = p.cat(L.cat), {x, y, w, h} = it;
@@ -453,6 +463,7 @@ function render(){
   $('#desk').classList.toggle('linking', linkMode);
   updateChrome();
 }
+
 /* ---------- Historique et sauvegarde locale ---------- */
 const LS_KEY = 'synoptique-regie-v1';
 function commit(){
@@ -563,6 +574,7 @@ function updateChrome(){
   $('#hint').textContent = linkMode ? (linkSrc ? 'Touchez l’appareil à relier.' : 'Glissez d’un appareil à l’autre pour les relier.')
     : !S.items.length ? 'Ajoutez un appareil depuis la bibliothèque.' : '';
 }
+
 /* ---------- Propriétés ---------- */
 function field(label, id, val, o = {}){
   const tag = o.area ? 'textarea rows="3"' : `input type="${o.num ? 'number' : 'text'}"${o.num ? ' min="0"' + (o.max ? ' max="' + o.max + '"' : '') : ''}`;
@@ -636,6 +648,7 @@ function renderInspector(){
     if (it.t === 'note') bind('nFs', it, 'fs', {num:1});
   }
 }
+
 /* ---------- Interactions sur le plan ---------- */
 const desk = $('#desk');
 const pts = new Map();
@@ -742,8 +755,15 @@ function exportSVG(){
 }
 const slug = s => (String(s || 'synoptique').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'synoptique');
 let dl = null;
+function anchorSave(name, data){
+  const blob = data instanceof Blob ? data : new Blob([data], {type: name.endsWith('.svg') ? 'image/svg+xml' : 'application/json'});
+  const a = document.createElement('a'), u = URL.createObjectURL(blob);
+  a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+  toast('Fichier téléchargé : ' + name);
+}
 async function save(name, data){
-  if (!dl) return toast('Enregistrement indisponible dans cet affichage.');
+  if (!dl) return anchorSave(name, data);
   try { await dl.save({filename:name, data}); toast('Fichier prêt : ' + name); }
   catch (err){ if (err && err.code !== 'declined') toast('Enregistrement impossible (' + (err.code || 'erreur') + ').'); }
 }
@@ -772,6 +792,7 @@ $('#fOpen').onchange = e => {
   };
   r.readAsText(f); e.target.value = '';
 };
+
 /* ---------- Exemple de départ ---------- */
 function sampleProject(){
   S = blank();
@@ -853,7 +874,10 @@ try {
   const cl = window.claude;
   if (cl && cl.use) cl.use('downloads').then(d => {
     dl = d;
-    if (!d) ['#bSave', '#bSvg', '#bPng'].forEach(s => { $(s).hidden = true; });
   }).catch(() => {});
 } catch (e) {}
+
 </script>
+
+</body>
+</html>
